@@ -7,17 +7,17 @@ CORS(app)
 
 def format_compact(val):
     try:
-        if not val or val == "N/A" or val == "-N/A":
-            return "N/A"
         val = float(val)
-        abs_val = abs(val)
-        if abs_val >= 1e12:
-            return f"{val / 1e12:.1f}T"
-        elif abs_val >= 1e9:
-            return f"{val / 1e9:.1f}B"
-        elif abs_val >= 1e6:
-            return f"{val / 1e6:.1f}M"
-        return f"{val:.2f}"
+        if val >= 1e12:
+            return f"{val/1e12:.1f}T"
+        elif val >= 1e9:
+            return f"{val/1e9:.1f}B"
+        elif val >= 1e6:
+            return f"{val/1e6:.1f}M"
+        elif val >= 1e3:
+            return f"{val/1e3:.1f}K"
+        else:
+            return f"{val:.2f}"
     except:
         return "N/A"
 
