@@ -15,14 +15,7 @@ def fetch_stock_data():
         stock = yf.Ticker(ticker)
         info = stock.info
 
-        # Fallback logic for operating income
-        operating_income = (
-            info.get('operatingIncome')
-            or info.get('totalOperatingIncome')
-            or info.get('operatingIncomeLoss')
-            or "N/A"
-        )
-
+        # Build response with fallback logic
         data = {
             'ticker': ticker,
             'name': info.get('longName', "N/A"),
@@ -36,11 +29,19 @@ def fetch_stock_data():
             'freeCashFlow': info.get('freeCashflow', "N/A"),
             'dividendYield': info.get('dividendYield', "N/A"),
             'dividendPerShare': info.get('dividendRate', "N/A"),
-            'peRatio': info.get('trailingPE', "N/A"),
+            'pERatio': (
+                info.get('trailingPE') or
+                info.get('forwardPE') or
+                "N/A"
+            ),
             'forwardPE': info.get('forwardPE', "N/A"),
             'debtToEquity': info.get('debtToEquity', "N/A"),
-            'ebitda': info.get('ebitda', "N/A"),
-            'operatingIncome': operating_income
+            'operatingIncome': (
+                info.get('operatingIncome') or
+                info.get('totalOperatingIncome') or
+                info.get('operatingIncomeLoss') or
+                "N/A"
+            )
         }
 
         return jsonify(data)
