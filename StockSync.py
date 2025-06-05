@@ -3,7 +3,7 @@ import yfinance as yf
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # Allow cross-origin requests from Google Sheets or anywhere
+CORS(app)
 
 @app.route('/fetch')
 def fetch_stock_data():
@@ -15,24 +15,32 @@ def fetch_stock_data():
         stock = yf.Ticker(ticker)
         info = stock.info
 
+        # Fallback logic for operating income
+        operating_income = (
+            info.get('operatingIncome')
+            or info.get('totalOperatingIncome')
+            or info.get('operatingIncomeLoss')
+            or "N/A"
+        )
+
         data = {
             'ticker': ticker,
-            'name': info.get('longName'),
-            'sector': info.get('sector'),
-            'price': info.get('currentPrice'),
-            'fiftyTwoWeekHigh': info.get('fiftyTwoWeekHigh'),
-            'fiftyTwoWeekLow': info.get('fiftyTwoWeekLow'),
-            'marketCap': info.get('marketCap'),
-            'revenue': info.get('totalRevenue'),
-            'netIncome': info.get('netIncomeToCommon'),
-            'freeCashFlow': info.get('freeCashflow'),
-            'dividendYield': info.get('dividendYield'),
-            'dividendPerShare': info.get('dividendRate'),
-            'peRatio': info.get('trailingPE'),
-            'forwardPE': info.get('forwardPE'),
-            'debtToEquity': info.get('debtToEquity'),
-            'operatingIncome': info.get('operatingIncome'),
-            'ebitda': info.get('ebitda')
+            'name': info.get('longName', "N/A"),
+            'sector': info.get('sector', "N/A"),
+            'price': info.get('currentPrice', "N/A"),
+            'fiftyTwoWeekHigh': info.get('fiftyTwoWeekHigh', "N/A"),
+            'fiftyTwoWeekLow': info.get('fiftyTwoWeekLow', "N/A"),
+            'marketCap': info.get('marketCap', "N/A"),
+            'revenue': info.get('totalRevenue', "N/A"),
+            'netIncome': info.get('netIncomeToCommon', "N/A"),
+            'freeCashFlow': info.get('freeCashflow', "N/A"),
+            'dividendYield': info.get('dividendYield', "N/A"),
+            'dividendPerShare': info.get('dividendRate', "N/A"),
+            'peRatio': info.get('trailingPE', "N/A"),
+            'forwardPE': info.get('forwardPE', "N/A"),
+            'debtToEquity': info.get('debtToEquity', "N/A"),
+            'ebitda': info.get('ebitda', "N/A"),
+            'operatingIncome': operating_income
         }
 
         return jsonify(data)
