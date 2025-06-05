@@ -3,29 +3,36 @@ import yfinance as yf
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # Allow requests from Google Sheets or any frontend
+CORS(app)  # Allow cross-origin requests from Google Sheets or anywhere
 
-@app.route('/fetch', methods=['GET', 'POST'])
+@app.route('/fetch')
 def fetch_stock_data():
-    ticker = request.args.get('ticker') or (request.json.get('ticker') if request.is_json else None)
-    print(f"→ RECEIVED TICKER: {ticker}")  # Debug: log what we get
-
-    if not ticker:
-        return jsonify({'error': 'Ticker symbol is required'}), 400
-
     try:
+        ticker = request.args.get('ticker', '').upper()
+        if not ticker:
+            return jsonify({'error': 'Missing ticker'}), 400
+
         stock = yf.Ticker(ticker)
         info = stock.info
 
         data = {
-            "ticker": ticker.upper(),
-            "name": info.get("shortName"),
-            "sector": info.get("sector"),
-            "marketCap": info.get("marketCap"),
-            "price": info.get("regularMarketPrice"),
-            "peRatio": info.get("trailingPE"),
-            "eps": info.get("trailingEps"),
-            "dividendYield": info.get("dividendYield"),
+            'ticker': ticker,
+            'name': info.get('longName'),
+            'sector': info.get('sector'),
+            'price': info.get('currentPrice'),
+            'fiftyTwoWeekHigh': info.get('fiftyTwoWeekHigh'),
+            'fiftyTwoWeekLow': info.get('fiftyTwoWeekLow'),
+            'marketCap': info.get('marketCap'),
+            'revenue': info.get('totalRevenue'),
+            'netIncome': info.get('netIncomeToCommon'),
+            'freeCashFlow': info.get('freeCashflow'),
+            'dividendYield': info.get('dividendYield'),
+            'dividendPerShare': info.get('dividendRate'),
+            'peRatio': info.get('trailingPE'),
+            'forwardPE': info.get('forwardPE'),
+            'debtToEquity': info.get('debtToEquity'),
+            'operatingIncome': info.get('operatingIncome'),
+            'ebitda': info.get('ebitda')
         }
 
         return jsonify(data)
@@ -35,4 +42,3 @@ def fetch_stock_data():
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=10000)
-
