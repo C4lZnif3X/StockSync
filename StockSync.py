@@ -18,33 +18,37 @@ def format_compact(val):
             return f"{val / 1_000:.1f}K"
         else:
             return f"{val:.2f}"
-    except:
+    except Exception:
         return "-"
 
 @app.route("/fetch")
 def fetch_stock_data():
     try:
-        ticker = request.args.get("ticker", "").upper()
-        if not ticker:
-            return jsonify({"error": "Missing ticker"}), 400
+        ticker = request.args.get("ticker", "").upper().strip()
+        if not ticker or ticker in {"TICKER", "NONE", "UNDEFINED"}:
+            return jsonify({"error": "Missing or invalid ticker"}), 400
 
         stock = yf.Ticker(ticker)
         info = stock.info
 
+        if not info or "longName" not in info:
+            return jsonify({"error": f"No data for ticker: {ticker}"}), 404
+
+        # Fallback hunt for operating income
         operating_income = (
             info.get("operatingIncome") or
             info.get("totalOperatingIncome") or
             info.get("operatingIncomeLoss") or
             "-"
         )
-
         if operating_income in [None, 0, "N/A", "-", ""]:
             try:
                 fin = stock.financials
                 if "Operating Income" in fin.index:
                     val = fin.loc["Operating Income"].iloc[0]
-                    operating_income = val if val != 0 else "-"
-            except:
+                    if val and val != 0:
+                        operating_income = val
+            except Exception:
                 pass
 
         data = {
@@ -58,7 +62,7 @@ def fetch_stock_data():
             "revenue": format_compact(info.get("totalRevenue")),
             "netIncome": format_compact(info.get("netIncomeToCommon") or info.get("netIncome")),
             "freeCashFlow": format_compact(info.get("freeCashflow")),
-            "dividendYield": f'{float(info.get("dividendYield", 0)) * 100:.2f}%' if info.get("dividendYield") else "-",
+            "dividendYield": f'{float(info["dividendYield"]) * 100:.2f}%' if info.get("dividendYield") else "-",
             "dividendPerShare": format_compact(info.get("dividendRate")),
             "peRatio": format_compact(info.get("trailingPE") or info.get("priceToEarnings")),
             "forwardPE": format_compact(info.get("forwardPE")),
@@ -71,6 +75,7 @@ def fetch_stock_data():
         return jsonify(data)
 
     except Exception as e:
+        print(f"[❌ ERROR] {ticker} → {e}")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
