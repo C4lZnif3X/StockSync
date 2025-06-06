@@ -8,17 +8,17 @@ def format_compact(val):
         if val is None or val == "N/A":
             return "-"
         if abs(val) >= 1_000_000_000_000:
-            return f"{val/1_000_000_000_000:.1f}T"
+            return f"{val / 1_000_000_000_000:.1f}T"
         elif abs(val) >= 1_000_000_000:
-            return f"{val/1_000_000_000:.1f}B"
+            return f"{val / 1_000_000_000:.1f}B"
         elif abs(val) >= 1_000_000:
-            return f"{val/1_000_000:.1f}M"
+            return f"{val / 1_000_000:.1f}M"
         elif abs(val) >= 1_000:
-            return f"{val/1_000:.1f}K"
+            return f"{val / 1_000:.1f}K"
         else:
             return f"{val:.2f}"
     except:
-        return "N/A"
+        return "-"
 
 @app.route("/fetch")
 def fetch_stock_data():
@@ -30,24 +30,31 @@ def fetch_stock_data():
         stock = yf.Ticker(ticker)
         info = stock.info
 
-        # Fallback logic for operating income
+        # Operating income fallback
         operating_income = (
             info.get("operatingIncome") or
             info.get("totalOperatingIncome") or
             info.get("operatingIncomeLoss") or
-            "N/A"
+            "-"
         )
 
-        if operating_income in [None, 0, "N/A", "-N/A"]:
+        if operating_income in [None, 0, "-", "-N/A"]:
             try:
                 fin = stock.financials
                 if "Operating Income" in fin.index:
                     fallback_val = fin.loc["Operating Income"].iloc[0]
-                    operating_income = fallback_val if fallback_val != 0 else "N/A"
+                    operating_income = fallback_val if fallback_val != 0 else "-"
             except Exception as e:
                 print("Fallback financials error:", e)
 
-                data = {
+        # Handle dividend yield safely
+        try:
+            dyield = info.get("dividendYield")
+            dividend_yield = f"{float(dyield) * 100:.2f}%" if dyield else "-"
+        except:
+            dividend_yield = "-"
+
+        data = {
             "ticker": ticker,
             "name": info.get("longName", "-"),
             "sector": info.get("sector", "-"),
@@ -58,9 +65,7 @@ def fetch_stock_data():
             "revenue": format_compact(info.get("totalRevenue") or info.get("totalRevenueTTM")),
             "netIncome": format_compact(info.get("netIncomeToCommon") or info.get("netIncome")),
             "freeCashFlow": format_compact(info.get("freeCashflow") or info.get("operatingCashflow")),
-            "dividendYield": (
-                f"{float(info.get('dividendYield', 0)) * 100:.2f}%" if info.get("dividendYield") else "-"
-            ),
+            "dividendYield": dividend_yield,
             "dividendPerShare": format_compact(info.get("dividendRate")),
             "PEratio": format_compact(
                 info.get("trailingPE") or info.get("priceToEarnings") or "-"
