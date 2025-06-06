@@ -5,7 +5,9 @@ app = Flask(__name__)
 
 def format_compact(val):
     try:
-        if val is None or val == "N/A":
+        if val is None or val == "N/A" or val == "-":
+            return "-"
+        if isinstance(val, str) and "N/A" in val:
             return "-"
         if abs(val) >= 1_000_000_000_000:
             return f"{val / 1_000_000_000_000:.1f}T"
