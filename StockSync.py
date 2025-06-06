@@ -56,7 +56,7 @@ def fetch_stock_data():
         except:
             dividend_yield = "-"
 
-        data = {
+                data = {
             "ticker": ticker,
             "name": info.get("longName", "-"),
             "sector": info.get("sector", "-"),
@@ -67,13 +67,22 @@ def fetch_stock_data():
             "revenue": format_compact(info.get("totalRevenue") or info.get("totalRevenueTTM")),
             "netIncome": format_compact(info.get("netIncomeToCommon") or info.get("netIncome")),
             "freeCashFlow": format_compact(info.get("freeCashflow") or info.get("operatingCashflow")),
-            "dividendYield": dividend_yield,
-            "dividendPerShare": format_compact(info.get("dividendRate")),
-            "PEratio": format_compact(
-                info.get("trailingPE") or info.get("priceToEarnings") or "-"
+
+            "dividendYield": (
+                f"{float(info.get('dividendYield')) * 100:.2f}%" if info.get("dividendYield") else "-"
             ),
-            "forwardPE": format_compact(info.get("forwardPE") or "-"),
-            "DebtToEquity": format_compact(info.get("debtToEquity") or "-"),
+            "dividendPerShare": format_compact(info.get("dividendRate")),
+
+            "PEratio": format_compact(
+                "-" if info.get("trailingPE") in [None, "N/A"] else info.get("trailingPE")
+            ),
+            "forwardPE": format_compact(
+                "-" if info.get("forwardPE") in [None, "N/A"] else info.get("forwardPE")
+            ),
+            "DebtToEquity": format_compact(
+                "-" if info.get("debtToEquity") in [None, "N/A"] else info.get("debtToEquity")
+            ),
+
             "operatingIncome": format_compact(operating_income or "-")
         }
 
