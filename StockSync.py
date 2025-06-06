@@ -1,12 +1,12 @@
 from flask import Flask, request, jsonify
 import yfinance as yf
+import pandas as pd
 
 app = Flask(__name__)
 
-# ─── Format numbers into compact notation (e.g., 1.2B, 500K) ─────────────
 def format_compact(val):
     try:
-        if val is None or str(val).upper() in ["N/A", "NAN", "-", ""]:
+        if val is None or val == "N/A":
             return "-"
         val = float(val)
         if abs(val) >= 1_000_000_000_000:
@@ -22,11 +22,6 @@ def format_compact(val):
     except:
         return "-"
 
-# ─── One place to sanitize sketchy values (None, NaN, N/A) ───────────────
-def sanitize(val):
-    return "-" if val in [None, "N/A", "NaN", "nan", ""] else val
-
-# ─── API Route ───────────────────────────────────────────────────────────
 @app.route("/fetch")
 def fetch_stock_data():
     try:
@@ -37,57 +32,40 @@ def fetch_stock_data():
         stock = yf.Ticker(ticker)
         info = stock.info
 
-        # ── Fallback logic for operating income if missing ────────────────
+        # Fallback for Operating Income
         operating_income = (
-            info.get("operatingIncome")
-            or info.get("totalOperatingIncome")
-            or info.get("operatingIncomeLoss")
-            or "-"
+            info.get("operatingIncome") or
+            info.get("totalOperatingIncome") or
+            info.get("operatingIncomeLoss") or
+            "-"
         )
-        if operating_income in [None, 0, "-", "N/A"]:
+
+        if operating_income in [None, 0, "N/A", "-", ""]:
             try:
                 fin = stock.financials
                 if "Operating Income" in fin.index:
                     fallback_val = fin.loc["Operating Income"].iloc[0]
                     operating_income = fallback_val if fallback_val != 0 else "-"
-            except Exception as e:
-                print("Fallback financials error:", e)
+            except:
+                pass
 
-        # ── Clean dividend yield formatting ──────────────────────────────
-        try:
-            dyield = info.get("dividendYield")
-            dividend_yield = f"{float(dyield) * 100:.2f}%" if dyield else "-"
-        except:
-            dividend_yield = "-"
-
-        # ── Extract and sanitize critical values before formatting ───────
-        pe_raw = sanitize(info.get("trailingPE"))
-        forward_pe_raw = sanitize(info.get("forwardPE"))
-        de_ratio_raw = sanitize(info.get("debtToEquity"))
-
-        # ── Build final dictionary for response ───────────────────────────
         data = {
             "ticker": ticker,
             "name": info.get("longName", "-"),
             "sector": info.get("sector", "-"),
-
             "price": format_compact(info.get("currentPrice")),
             "fiftyTwoWeekHigh": format_compact(info.get("fiftyTwoWeekHigh")),
             "fiftyTwoWeekLow": format_compact(info.get("fiftyTwoWeekLow")),
-
             "marketCap": format_compact(info.get("marketCap")),
-            "revenue": format_compact(info.get("totalRevenue") or info.get("totalRevenueTTM")),
+            "revenue": format_compact(info.get("totalRevenue")),
             "netIncome": format_compact(info.get("netIncomeToCommon") or info.get("netIncome")),
-            "freeCashFlow": format_compact(info.get("freeCashflow") or info.get("operatingCashflow")),
-
-            "dividendYield": dividend_yield,
+            "freeCashFlow": format_compact(info.get("freeCashflow")),
+            "dividendYield": f'{float(info.get("dividendYield", 0)) * 100:.2f}%' if info.get("dividendYield") else "-",
             "dividendPerShare": format_compact(info.get("dividendRate")),
-
-            "PEratio": format_compact(pe_raw),
-            "forwardPE": format_compact(forward_pe_raw),
-            "DebtToEquity": format_compact(de_ratio_raw),
-
-            "operatingIncome": format_compact(operating_income or "-")
+            "peRatio": format_compact(info.get("trailingPE") or info.get("priceToEarnings")),
+            "forwardPE": format_compact(info.get("forwardPE")),
+            "debtToEquity": format_compact(info.get("debtToEquity")),
+            "operatingIncome": format_compact(operating_income)
         }
 
         return jsonify(data)
@@ -95,6 +73,5 @@ def fetch_stock_data():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ─── Run app locally or on Render ─────────────────────────────────────────
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
