@@ -1,3 +1,25 @@
+from flask import Flask, request, jsonify
+import yfinance as yf
+
+app = Flask(__name__)
+
+def format_compact(val):
+    try:
+        if val is None or val == "N/A":
+            return "N/A"
+        if abs(val) >= 1_000_000_000_000:
+            return f"{val/1_000_000_000_000:.1f}T"
+        elif abs(val) >= 1_000_000_000:
+            return f"{val/1_000_000_000:.1f}B"
+        elif abs(val) >= 1_000_000:
+            return f"{val/1_000_000:.1f}M"
+        elif abs(val) >= 1_000:
+            return f"{val/1_000:.1f}K"
+        else:
+            return f"{val:.2f}"
+    except:
+        return "N/A"
+
 @app.route("/fetch")
 def fetch_stock_data():
     try:
@@ -8,7 +30,7 @@ def fetch_stock_data():
         stock = yf.Ticker(ticker)
         info = stock.info
 
-        # Operating income fallback
+        # Fallback logic for operating income
         operating_income = (
             info.get("operatingIncome") or
             info.get("totalOperatingIncome") or
@@ -25,7 +47,6 @@ def fetch_stock_data():
             except Exception as e:
                 print("Fallback financials error:", e)
 
-        # ✅ THIS IS WHERE WE DEFINE `data`
         data = {
             "ticker": ticker,
             "name": info.get("longName", "N/A"),
@@ -53,3 +74,6 @@ def fetch_stock_data():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
