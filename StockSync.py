@@ -48,7 +48,7 @@ def fetch_stock_data():
                 print("Fallback financials error:", e)
 
         # Format everything consistently
-        data = {
+                data = {
             "ticker": ticker,
             "name": info.get("longName", "N/A"),
             "sector": info.get("sector", "N/A"),
@@ -56,14 +56,20 @@ def fetch_stock_data():
             "fiftyTwoWeekHigh": format_compact(info.get("fiftyTwoWeekHigh")),
             "fiftyTwoWeekLow": format_compact(info.get("fiftyTwoWeekLow")),
             "marketCap": format_compact(info.get("marketCap")),
-            "revenue": format_compact(info.get("totalRevenue")),
-            "netIncome": format_compact(info.get("netIncomeToCommon")),
-            "freeCashFlow": format_compact(info.get("freeCashflow")),
-            "dividendYield": f"{float(info.get('dividendYield', 0)) * 100:.2f}%" if info.get("dividendYield") else "N/A",
+            "revenue": format_compact(info.get("totalRevenue") or info.get("totalRevenueTTM")),
+            "netIncome": format_compact(info.get("netIncomeToCommon") or info.get("netIncome")),
+            "freeCashFlow": format_compact(info.get("freeCashflow") or info.get("operatingCashflow")),
+            "dividendYield": (
+                f"{float(info.get('dividendYield', 0)) * 100:.2f}%" if info.get("dividendYield") else "N/A"
+            ),
             "dividendPerShare": format_compact(info.get("dividendRate")),
-            "PEratio": format_compact(info.get("trailingPE") or info.get("priceToEarnings")),
-            "forwardPE": format_compact(info.get("forwardPE")),
-            "debtToEquity": format_compact(info.get("debtToEquity")),
+            "PEratio": format_compact(
+                info.get("trailingPE") or
+                info.get("priceToEarnings") or
+                "N/A"
+            ),
+            "forwardPE": format_compact(info.get("forwardPE") or "N/A"),
+            "DebtToEquity": format_compact(info.get("debtToEquity") or "N/A"),
             "operatingIncome": format_compact(operating_income)
         }
 
