@@ -3,11 +3,10 @@ import yfinance as yf
 
 app = Flask(__name__)
 
+# Format values into human-readable compact form
 def format_compact(val):
     try:
-        if val is None or val == "N/A" or val == "-":
-            return "-"
-        if isinstance(val, str) and "N/A" in val:
+        if val is None or val == "N/A" or val == "-" or str(val).lower() in ["nan", ""]:
             return "-"
         if abs(val) >= 1_000_000_000_000:
             return f"{val / 1_000_000_000_000:.1f}T"
@@ -22,6 +21,10 @@ def format_compact(val):
     except:
         return "-"
 
+# Helper to clean up bad API values before formatting
+def sanitize(val):
+    return "-" if val in [None, "N/A", "NaN", "nan", ""] else val
+
 @app.route("/fetch")
 def fetch_stock_data():
     try:
@@ -32,7 +35,7 @@ def fetch_stock_data():
         stock = yf.Ticker(ticker)
         info = stock.info
 
-        # Operating income fallback
+        # Fallback logic for operating income
         operating_income = (
             info.get("operatingIncome") or
             info.get("totalOperatingIncome") or
@@ -49,12 +52,17 @@ def fetch_stock_data():
             except Exception as e:
                 print("Fallback financials error:", e)
 
-        # Handle dividend yield safely
+        # Dividend yield safely formatted
         try:
             dyield = info.get("dividendYield")
             dividend_yield = f"{float(dyield) * 100:.2f}%" if dyield else "-"
         except:
             dividend_yield = "-"
+
+        # Manually sanitize edge-case metrics
+        pe_raw = sanitize(info.get("trailingPE"))
+        forward_pe_raw = sanitize(info.get("forwardPE"))
+        de_ratio_raw = sanitize(info.get("debtToEquity"))
 
         data = {
             "ticker": ticker,
@@ -67,22 +75,11 @@ def fetch_stock_data():
             "revenue": format_compact(info.get("totalRevenue") or info.get("totalRevenueTTM")),
             "netIncome": format_compact(info.get("netIncomeToCommon") or info.get("netIncome")),
             "freeCashFlow": format_compact(info.get("freeCashflow") or info.get("operatingCashflow")),
-
-            "dividendYield": (
-                f"{float(info.get('dividendYield')) * 100:.2f}%" if info.get("dividendYield") else "-"
-            ),
+            "dividendYield": dividend_yield,
             "dividendPerShare": format_compact(info.get("dividendRate")),
-
-            "PEratio": format_compact(
-                "-" if info.get("trailingPE") in [None, "N/A"] else info.get("trailingPE")
-            ),
-            "forwardPE": format_compact(
-                "-" if info.get("forwardPE") in [None, "N/A"] else info.get("forwardPE")
-            ),
-            "DebtToEquity": format_compact(
-                "-" if info.get("debtToEquity") in [None, "N/A"] else info.get("debtToEquity")
-            ),
-
+            "PEratio": format_compact(pe_raw),
+            "forwardPE": format_compact(forward_pe_raw),
+            "DebtToEquity": format_compact(de_ratio_raw),
             "operatingIncome": format_compact(operating_income or "-")
         }
 
