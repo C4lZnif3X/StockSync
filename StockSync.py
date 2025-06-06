@@ -47,10 +47,10 @@ def fetch_stock_data():
             except Exception as e:
                 print("Fallback financials error:", e)
 
-        data = {
+                data = {
             "ticker": ticker,
-            "name": info.get("longName", "N/A"),
-            "sector": info.get("sector", "N/A"),
+            "name": info.get("longName", "-"),
+            "sector": info.get("sector", "-"),
             "price": format_compact(info.get("currentPrice")),
             "fiftyTwoWeekHigh": format_compact(info.get("fiftyTwoWeekHigh")),
             "fiftyTwoWeekLow": format_compact(info.get("fiftyTwoWeekLow")),
@@ -59,15 +59,15 @@ def fetch_stock_data():
             "netIncome": format_compact(info.get("netIncomeToCommon") or info.get("netIncome")),
             "freeCashFlow": format_compact(info.get("freeCashflow") or info.get("operatingCashflow")),
             "dividendYield": (
-                f"{float(info.get('dividendYield', 0)) * 100:.2f}%" if info.get("dividendYield") else "N/A"
+                f"{float(info.get('dividendYield', 0)) * 100:.2f}%" if info.get("dividendYield") else "-"
             ),
             "dividendPerShare": format_compact(info.get("dividendRate")),
             "PEratio": format_compact(
-                info.get("trailingPE") or info.get("priceToEarnings") or "N/A"
+                info.get("trailingPE") or info.get("priceToEarnings") or "-"
             ),
-            "forwardPE": format_compact(info.get("forwardPE") or "N/A"),
-            "DebtToEquity": format_compact(info.get("debtToEquity") or "N/A"),
-            "operatingIncome": format_compact(operating_income)
+            "forwardPE": format_compact(info.get("forwardPE") or "-"),
+            "DebtToEquity": format_compact(info.get("debtToEquity") or "-"),
+            "operatingIncome": format_compact(operating_income or "-")
         }
 
         return jsonify(data)
