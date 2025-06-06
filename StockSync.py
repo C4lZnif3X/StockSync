@@ -63,7 +63,7 @@ def fetch_stock_data():
             "netIncome": format_compact(info.get("netIncomeToCommon") or info.get("netIncome")),
             "freeCashFlow": format_compact(info.get("freeCashflow")),
             "dividendYield": f'{float(info["dividendYield"]) * 100:.2f}%' if info.get("dividendYield") else "-",
-            "dividendPerShare": format_compact(info.get("dividendRate")),
+            "dividendPerShare": round(float(info.get("dividendRate", 0)) / 4, 2),
             "peRatio": format_compact(info.get("trailingPE") or info.get("priceToEarnings")),
             "forwardPE": format_compact(info.get("forwardPE")),
             "debtToEquity": format_compact(info.get("debtToEquity")),
