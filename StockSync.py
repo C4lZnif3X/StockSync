@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify
 import yfinance as yf
-import pandas as pd
 
 app = Flask(__name__)
 
@@ -32,7 +31,6 @@ def fetch_stock_data():
         stock = yf.Ticker(ticker)
         info = stock.info
 
-        # Fallback for Operating Income
         operating_income = (
             info.get("operatingIncome") or
             info.get("totalOperatingIncome") or
@@ -44,8 +42,8 @@ def fetch_stock_data():
             try:
                 fin = stock.financials
                 if "Operating Income" in fin.index:
-                    fallback_val = fin.loc["Operating Income"].iloc[0]
-                    operating_income = fallback_val if fallback_val != 0 else "-"
+                    val = fin.loc["Operating Income"].iloc[0]
+                    operating_income = val if val != 0 else "-"
             except:
                 pass
 
@@ -65,7 +63,9 @@ def fetch_stock_data():
             "peRatio": format_compact(info.get("trailingPE") or info.get("priceToEarnings")),
             "forwardPE": format_compact(info.get("forwardPE")),
             "debtToEquity": format_compact(info.get("debtToEquity")),
-            "operatingIncome": format_compact(operating_income)
+            "operatingIncome": format_compact(operating_income),
+            "sharesOutstanding": format_compact(info.get("sharesOutstanding")),
+            "eps": format_compact(info.get("trailingEps") or info.get("epsForward")),
         }
 
         return jsonify(data)
