@@ -1,26 +1,3 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import yfinance as yf
-
-app = Flask(__name__)
-CORS(app)
-
-def format_compact(val):
-    try:
-        val = float(val)
-        if val >= 1e12:
-            return f"{val/1e12:.1f}T"
-        elif val >= 1e9:
-            return f"{val/1e9:.1f}B"
-        elif val >= 1e6:
-            return f"{val/1e6:.1f}M"
-        elif val >= 1e3:
-            return f"{val/1e3:.1f}K"
-        else:
-            return f"{val:.2f}"
-    except:
-        return "N/A"
-
 @app.route("/fetch")
 def fetch_stock_data():
     try:
@@ -33,11 +10,12 @@ def fetch_stock_data():
 
         # Operating income fallback
         operating_income = (
-            info.get("operatingIncome")
-            or info.get("totalOperatingIncome")
-            or info.get("operatingIncomeLoss")
-            or "N/A"
+            info.get("operatingIncome") or
+            info.get("totalOperatingIncome") or
+            info.get("operatingIncomeLoss") or
+            "N/A"
         )
+
         if operating_income in [None, 0, "N/A", "-N/A"]:
             try:
                 fin = stock.financials
@@ -47,8 +25,8 @@ def fetch_stock_data():
             except Exception as e:
                 print("Fallback financials error:", e)
 
-        # Format everything consistently
-                data = {
+        # ✅ THIS IS WHERE WE DEFINE `data`
+        data = {
             "ticker": ticker,
             "name": info.get("longName", "N/A"),
             "sector": info.get("sector", "N/A"),
@@ -64,9 +42,7 @@ def fetch_stock_data():
             ),
             "dividendPerShare": format_compact(info.get("dividendRate")),
             "PEratio": format_compact(
-                info.get("trailingPE") or
-                info.get("priceToEarnings") or
-                "N/A"
+                info.get("trailingPE") or info.get("priceToEarnings") or "N/A"
             ),
             "forwardPE": format_compact(info.get("forwardPE") or "N/A"),
             "DebtToEquity": format_compact(info.get("debtToEquity") or "N/A"),
@@ -77,6 +53,3 @@ def fetch_stock_data():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
