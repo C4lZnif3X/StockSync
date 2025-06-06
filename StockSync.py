@@ -56,7 +56,7 @@ def fetch_stock_data():
         except:
             dividend_yield = "-"
 
-                data = {
+        data = {
             "ticker": ticker,
             "name": info.get("longName", "-"),
             "sector": info.get("sector", "-"),
